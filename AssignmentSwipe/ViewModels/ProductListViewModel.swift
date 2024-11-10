@@ -27,9 +27,25 @@ class ProductListViewModel: ObservableObject {
         }
     }
     
+    // New async function for pull-to-refresh
+    @MainActor
+    func refreshProducts() async {
+        isLoading = true
+        await withCheckedContinuation { continuation in
+            NetworkManager.shared.fetchProducts { [weak self] products in
+                DispatchQueue.main.async {
+                    self?.products = products ?? []
+                    self?.isLoading = false
+                    continuation.resume()
+                }
+            }
+        }
+    }
+    
     func toggleFavorite(for product: Product) {
         if let index = products.firstIndex(where: { $0.id == product.id }) {
             products[index].isFavorite.toggle()
+            // Sort products to move favorites to the top
             products.sort { $0.isFavorite && !$1.isFavorite }
         }
     }
@@ -39,6 +55,4 @@ class ProductListViewModel: ObservableObject {
             searchText.isEmpty || $0.productName.localizedCaseInsensitiveContains(searchText)
         }
     }
-
 }
-

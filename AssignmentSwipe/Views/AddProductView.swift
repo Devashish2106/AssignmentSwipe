@@ -13,7 +13,8 @@ struct AddProductView: View {
     @Environment(\.dismiss) var dismiss
     @State private var selectedImage: UIImage?
     @State private var isImagePickerPresented = false
-
+    var onProductAdded: () -> Void
+    
     var body: some View {
         NavigationView {
             VStack {
@@ -53,10 +54,10 @@ struct AddProductView: View {
                     }
                 }
                 
-                // Buttons at the bottom of the screen
                 VStack {
                     Button("Add Product") {
                         viewModel.addProduct {
+                            onProductAdded()  // Call the callback when product is added successfully
                             dismiss()
                         }
                     }
@@ -76,7 +77,7 @@ struct AddProductView: View {
                     .foregroundColor(.red)
                     .padding(.top)
                 }
-                .padding(.bottom, 20)  // Add padding at the bottom for better spacing
+                .padding(.bottom, 20)
             }
             .navigationTitle("Add Product")
             .alert(isPresented: $viewModel.showAlert) {

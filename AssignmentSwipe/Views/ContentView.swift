@@ -61,6 +61,9 @@ struct ContentView: View {
                                     .buttonStyle(BorderlessButtonStyle())
                                 }
                             }
+                            .refreshable {  // Add pull-to-refresh functionality
+                                await viewModel.refreshProducts()
+                            }
                         }
 
                         Button(action: { showAddProductScreen.toggle() }) {
@@ -73,7 +76,9 @@ struct ContentView: View {
                     }
                     .navigationTitle("Product List")
                     .sheet(isPresented: $showAddProductScreen) {
-                        AddProductView()
+                        AddProductView(onProductAdded: {
+                            viewModel.fetchProducts() // Refresh the list when a product is added
+                        })
                     }
                 }
             }

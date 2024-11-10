@@ -35,21 +35,43 @@ class NetworkManager {
             }
         }.resume()
     }
-
     
     func addProduct(product: Product, completion: @escaping (Bool) -> Void) {
         guard let url = URL(string: "https://app.getswipe.in/api/public/add") else { return }
         
+        // Create multipart form data
+        let boundary = "Boundary-\(UUID().uuidString)"
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        let parameters: [String: Any] = [
-            "product_name": product.productName,
-            "product_type": product.productType,
-            "price": "\(product.price)",
-            "tax": "\(product.tax)"
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: parameters)
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        var body = Data()
+        
+        // Function to append form field
+        func appendFormField(named name: String, value: String) {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".data(using: .utf8)!)
+            body.append("\(value)\r\n".data(using: .utf8)!)
+        }
+        
+        // Add form fields
+        appendFormField(named: "product_name", value: product.productName)
+        appendFormField(named: "product_type", value: product.productType)
+        appendFormField(named: "price", value: String(format: "%.2f", product.price))
+        appendFormField(named: "tax", value: String(format: "%.2f", product.tax))
+        
+        // Add final boundary
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        // Set the request body
+        request.httpBody = body
+        
+        // Print request for debugging
+        print("Request URL: \(url)")
+        print("Request Headers: \(String(describing: request.allHTTPHeaderFields))")
+        if let bodyString = String(data: body, encoding: .utf8) {
+            print("Request Body: \(bodyString)")
+        }
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
@@ -68,6 +90,11 @@ class NetworkManager {
                 return
             }
             
+            // Print response for debugging
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("Response: \(responseString)")
+            }
+            
             do {
                 let response = try JSONDecoder().decode(AddProductResponse.self, from: data)
                 completion(response.success ?? false)
@@ -79,4 +106,3 @@ class NetworkManager {
         }.resume()
     }
 }
-
