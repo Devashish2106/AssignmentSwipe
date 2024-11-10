@@ -8,10 +8,12 @@
 import SwiftUI
 import PhotosUI
 
+import SwiftUI
+import PhotosUI
+
 struct AddProductView: View {
     @StateObject private var viewModel = AddProductViewModel()
     @Environment(\.dismiss) var dismiss
-    @State private var selectedImage: UIImage?
     @State private var isImagePickerPresented = false
     var onProductAdded: () -> Void
     
@@ -23,8 +25,9 @@ struct AddProductView: View {
                         TextField("Product Name", text: $viewModel.productName)
                         
                         Picker("Product Type", selection: $viewModel.productType) {
+                            Text("Select Type").tag("")
                             ForEach(["Product", "Service"], id: \.self) { type in
-                                Text(type)
+                                Text(type).tag(type)
                             }
                         }
                         
@@ -34,55 +37,70 @@ struct AddProductView: View {
                             .keyboardType(.decimalPad)
                     }
 
-                    Section(header: Text("Select Image")) {
+                    Section(header: Text("Product Image")) {
                         Button(action: {
                             isImagePickerPresented.toggle()
                         }) {
-                            Text("Choose Image")
+                            HStack {
+                                Image(systemName: "photo")
+                                Text(viewModel.selectedImage == nil ? "Add Image" : "Change Image")
+                            }
                         }
-                        .sheet(isPresented: $isImagePickerPresented) {
-                            ImagePicker(image: $selectedImage)
-                        }
-
-                        if let selectedImage = selectedImage {
-                            Image(uiImage: selectedImage)
+                        
+                        if let image = viewModel.selectedImage {
+                            Image(uiImage: image)
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 100, height: 100)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .frame(height: 200)
+                                .clipped()
                         }
                     }
                 }
                 
-                VStack {
-                    Button("Add Product") {
-                        viewModel.addProduct {
-                            onProductAdded()  // Call the callback when product is added successfully
-                            dismiss()
-                        }
+                Button(action: {
+                    viewModel.addProduct {
+                        onProductAdded()
+                        dismiss()
                     }
-                    .padding()
-                    .foregroundColor(.white)
-                    .background(Color.blue)
-                    .cornerRadius(8)
-                    .disabled(viewModel.isAddingProduct)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal)
-
-                    Button("Cancel") {
-                        if !viewModel.isAddingProduct {
-                            dismiss()
-                        }
+                }) {
+                    if viewModel.isAddingProduct {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle())
+                    } else {
+                        Text("Add Product")
+                            .frame(maxWidth: .infinity)
                     }
-                    .foregroundColor(.red)
-                    .padding(.top)
                 }
-                .padding(.bottom, 20)
+                .disabled(viewModel.isAddingProduct)
+                .buttonStyle(.borderedProminent)
+                .padding()
             }
             .navigationTitle("Add Product")
-            .alert(isPresented: $viewModel.showAlert) {
-                Alert(title: Text("Info"), message: Text(viewModel.alertMessage), dismissButton: .default(Text("OK")))
+            .navigationBarItems(
+                leading: Button(action: {
+                    dismiss()
+                }) {
+                    HStack {
+                        Image(systemName: "chevron.left")
+                        Text("Back")
+                    }
+                }
+            )
+            .sheet(isPresented: $isImagePickerPresented) {
+                ImagePicker(image: $viewModel.selectedImage)
+            }
+            .alert("Message", isPresented: $viewModel.showAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(viewModel.alertMessage)
             }
         }
+    }
+}
+
+// Preview provider for SwiftUI canvas
+struct AddProductView_Previews: PreviewProvider {
+    static var previews: some View {
+        AddProductView(onProductAdded: {})
     }
 }

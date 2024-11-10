@@ -12,7 +12,7 @@ class AddProductViewModel: ObservableObject {
     @Published var productType: String = ""
     @Published var price: String = ""
     @Published var tax: String = ""
-    @Published var image: UIImage?
+    @Published var selectedImage: UIImage?
     @Published var showAlert = false
     @Published var alertMessage = ""
     @Published var isAddingProduct = false
@@ -50,14 +50,10 @@ class AddProductViewModel: ObservableObject {
     }
     
     func addProduct(completion: @escaping () -> Void) {
-        // Validate inputs first
-        guard validateInputs() else {
-            return
-        }
+        guard validateInputs() else { return }
         
         isAddingProduct = true
         
-        // Convert string values to appropriate types
         let priceValue = Double(price) ?? 0
         let taxValue = Double(tax) ?? 0
         
@@ -69,14 +65,17 @@ class AddProductViewModel: ObservableObject {
             tax: taxValue
         )
         
-        NetworkManager.shared.addProduct(product: newProduct) { [weak self] success in
+        // Pass the selected image to NetworkManager
+        NetworkManager.shared.addProduct(product: newProduct, image: selectedImage) { [weak self] success, imageUrl in
             DispatchQueue.main.async {
                 self?.isAddingProduct = false
-                self?.alertMessage = success ? "Product added successfully!" : "Failed to add product"
-                self?.showAlert = true
                 if success {
+                    self?.alertMessage = "Product added successfully!"
                     completion()
+                } else {
+                    self?.alertMessage = "Failed to add product. Please try again."
                 }
+                self?.showAlert = true
             }
         }
     }
