@@ -35,13 +35,10 @@ class ProductListViewModel: ObservableObject {
     }
     
     func filteredProducts() -> [Product] {
-        if searchText.isEmpty {
-            return products
-        } else {
-            return products.filter {
-                $0.productName.lowercased().contains(searchText.lowercased())
-            }
+        products.filter {
+            searchText.isEmpty || $0.productName.localizedCaseInsensitiveContains(searchText)
         }
     }
+
 }
 

@@ -8,9 +8,9 @@
 import Foundation
 
 struct AddProductResponse: Codable {
-    let message: String
-    let productDetails: Product
-    let productId: Int
-    let success: Bool
+    let message: String?
+    let productDetails: Product?
+    let productId: Int?
+    let success: Bool?
 }
 

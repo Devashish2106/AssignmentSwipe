@@ -6,62 +6,82 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct AddProductView: View {
     @StateObject private var viewModel = AddProductViewModel()
-    @Environment(\.dismiss) var dismiss  // Dismiss the sheet
+    @Environment(\.dismiss) var dismiss
+    @State private var selectedImage: UIImage?
+    @State private var isImagePickerPresented = false
 
     var body: some View {
-        ZStack {
+        NavigationView {
             VStack {
                 Form {
                     Section(header: Text("Product Details")) {
                         TextField("Product Name", text: $viewModel.productName)
-                        TextField("Product Type", text: $viewModel.productType)
+                        
+                        Picker("Product Type", selection: $viewModel.productType) {
+                            ForEach(["Product", "Service"], id: \.self) { type in
+                                Text(type)
+                            }
+                        }
+                        
                         TextField("Price", text: $viewModel.price)
                             .keyboardType(.decimalPad)
                         TextField("Tax", text: $viewModel.tax)
                             .keyboardType(.decimalPad)
                     }
-                }
 
-                Spacer()
-                
-                // Centering the Add Product button
-                Button("Add Product") {
-                    viewModel.addProduct {
-                        dismiss()  // Dismiss the sheet after the product is successfully added
+                    Section(header: Text("Select Image")) {
+                        Button(action: {
+                            isImagePickerPresented.toggle()
+                        }) {
+                            Text("Choose Image")
+                        }
+                        .sheet(isPresented: $isImagePickerPresented) {
+                            ImagePicker(image: $selectedImage)
+                        }
+
+                        if let selectedImage = selectedImage {
+                            Image(uiImage: selectedImage)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100, height: 100)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
                     }
                 }
-                .padding()
-                .foregroundColor(.white)
-                .background(Color.blue)
-                .cornerRadius(8)
-                .disabled(viewModel.isAddingProduct)  // Disable while adding product
-                .frame(maxWidth: .infinity)
-                .padding()
-            }
-
-            // Cancel Button at the top-right corner
-            VStack {
-                HStack {
-                    Spacer()
-                    Button(action: {
-                        if !viewModel.isAddingProduct {  // Only dismiss if not adding product
+                
+                // Buttons at the bottom of the screen
+                VStack {
+                    Button("Add Product") {
+                        viewModel.addProduct {
                             dismiss()
                         }
-                    }) {
-                        Text("Cancel")
-                            .foregroundColor(.red)
-                            .padding()
                     }
+                    .padding()
+                    .foregroundColor(.white)
+                    .background(Color.blue)
+                    .cornerRadius(8)
+                    .disabled(viewModel.isAddingProduct)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal)
+
+                    Button("Cancel") {
+                        if !viewModel.isAddingProduct {
+                            dismiss()
+                        }
+                    }
+                    .foregroundColor(.red)
+                    .padding(.top)
                 }
-                Spacer()
+                .padding(.bottom, 20)  // Add padding at the bottom for better spacing
             }
-        }
-        .navigationTitle("Add Product")
-        .alert(isPresented: $viewModel.showAlert) {
-            Alert(title: Text("Info"), message: Text(viewModel.alertMessage), dismissButton: .default(Text("OK")))
+            .navigationTitle("Add Product")
+            .alert(isPresented: $viewModel.showAlert) {
+                Alert(title: Text("Info"), message: Text(viewModel.alertMessage), dismissButton: .default(Text("OK")))
+            }
         }
     }
 }
