@@ -3,24 +3,21 @@ import SwiftUI
 struct ContentView: View {
     @StateObject var viewModel = ProductListViewModel()
     @State private var showAddProductScreen = false
-    @State private var isFirstScreen = true  // Track whether to show the first screen
+    @State private var isFirstScreen = true
 
     var body: some View {
         NavigationView {
             VStack {
                 if isFirstScreen {
-                    // Show the first screen with demo image and label
                     FirstScreenView(isFirstScreen: $isFirstScreen)
                         .onAppear {
-                            // Wait for 2 seconds before transitioning to the next screen
                             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                                 withAnimation {
-                                    isFirstScreen = false  // Transition to the main product list
+                                    isFirstScreen = false
                                 }
                             }
                         }
                 } else {
-                    // Show the product list screen after the first screen
                     VStack {
                         TextField("Search products", text: $viewModel.searchText)
                             .padding()
@@ -29,32 +26,30 @@ struct ContentView: View {
                             .padding(.horizontal)
 
                         if viewModel.isLoading {
-                            ProgressView("Loading...")
+                            ProgressView("Loading products...")
+                                .progressViewStyle(CircularProgressViewStyle())
+                                .scaleEffect(1.5)
                         } else {
                             List(viewModel.filteredProducts()) { product in
                                 HStack {
-                                    // Product Image
                                     AsyncImage(url: URL(string: product.image ?? "")) { image in
                                         image.resizable()
                                     } placeholder: {
-                                        Image("demo") // Using "demo" as the default image
+                                        Image("demo")
                                             .resizable()
                                     }
                                     .frame(width: 50, height: 50)
                                     .cornerRadius(5)
-                                    
-                                    // Product Details
+
                                     VStack(alignment: .leading) {
                                         Text(product.productName).font(.headline)
                                         Text(product.productType).font(.subheadline)
-                                        // Format price and tax with 2 decimal places and ₹ symbol
                                         Text("Price: ₹\(String(format: "%.2f", product.price))").font(.footnote)
                                         Text("Tax: ₹\(String(format: "%.2f", product.tax))").font(.footnote)
                                     }
-                                    
+
                                     Spacer()
-                                    
-                                    // Heart Icon for Favorite
+
                                     Button(action: {
                                         withAnimation(.easeInOut(duration: 0.3)) {
                                             viewModel.toggleFavorite(for: product)
@@ -63,10 +58,9 @@ struct ContentView: View {
                                         Image(systemName: product.isFavorite ? "heart.fill" : "heart")
                                             .foregroundColor(product.isFavorite ? .red : .gray)
                                     }
-                                    .buttonStyle(BorderlessButtonStyle()) // Prevents button from affecting row selection
+                                    .buttonStyle(BorderlessButtonStyle())
                                 }
                             }
-                            .animation(.easeInOut(duration: 0.3), value: viewModel.products)
                         }
 
                         Button(action: { showAddProductScreen.toggle() }) {
@@ -86,6 +80,7 @@ struct ContentView: View {
         }
     }
 }
+
 
 struct FirstScreenView: View {
     @Binding var isFirstScreen: Bool

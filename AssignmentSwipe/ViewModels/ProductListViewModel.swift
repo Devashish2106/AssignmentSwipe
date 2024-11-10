@@ -28,14 +28,19 @@ class ProductListViewModel: ObservableObject {
     }
     
     func toggleFavorite(for product: Product) {
-        // Logic to toggle favorite and save locally (UserDefaults or Core Data)
+        if let index = products.firstIndex(where: { $0.id == product.id }) {
+            products[index].isFavorite.toggle()
+            products.sort { $0.isFavorite && !$1.isFavorite }
+        }
     }
     
     func filteredProducts() -> [Product] {
         if searchText.isEmpty {
             return products
         } else {
-            return products.filter { $0.productName.contains(searchText) }
+            return products.filter {
+                $0.productName.lowercased().contains(searchText.lowercased())
+            }
         }
     }
 }
