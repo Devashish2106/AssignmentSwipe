@@ -75,7 +75,7 @@ struct ContentView: View {
                         Button(action: { showAddProductScreen.toggle() }) {
                             Text("Add Product")
                                 .padding()
-                                .background(Color.blue)
+                                .background(Color.accentColor)
                                 .foregroundColor(.white)
                                 .cornerRadius(10)
                         }
