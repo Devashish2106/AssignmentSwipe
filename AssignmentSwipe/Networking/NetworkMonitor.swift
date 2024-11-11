@@ -29,6 +29,7 @@ class NetworkMonitor: ObservableObject {
     }
     
     private func syncPendingProducts() {
+//        Function to send request if any pending after device is connected to network
         let context = PersistenceController.shared.container.viewContext
         let fetchRequest: NSFetchRequest<ProductEntity> = ProductEntity.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "needsUpload == YES")

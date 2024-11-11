@@ -14,6 +14,7 @@ class NetworkManager {
     private init() {}
     
     func fetchProducts(completion: @escaping ([Product]?) -> Void) {
+//        Function to fetch data using GET API.
         guard let url = URL(string: "https://app.getswipe.in/api/public/get") else { return }
         
         URLSession.shared.dataTask(with: url) { data, response, error in
@@ -38,6 +39,7 @@ class NetworkManager {
     }
     
     func addProduct(product: Product, image: UIImage?, completion: @escaping (Bool, String?) -> Void) {
+//      Function to add data using POST API
         guard let url = URL(string: "https://app.getswipe.in/api/public/add") else { return }
         
         let boundary = "Boundary-\(UUID().uuidString)"
@@ -63,29 +65,26 @@ class NetworkManager {
             body.append("\r\n".data(using: .utf8)!)
         }
             
-        // Append all form fields
         appendFormField(named: "product_name", value: product.productName)
         appendFormField(named: "product_type", value: product.productType)
         appendFormField(named: "price", value: String(format: "%.2f", product.price))
         appendFormField(named: "tax", value: String(format: "%.2f", product.tax))
             
-        // Append image if available
+        // Check if image is selected
         if let image = image {
             appendImageData(image: image, fieldName: "files")
         }
             
-        // Add final boundary
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
             
-        // Set the request body
         request.httpBody = body
-            
-        // Print request details for debugging
+        
         print("Request URL: \(url)")
         print("Request Headers: \(String(describing: request.allHTTPHeaderFields))")
         print("Request Body Length: \(body.count) bytes")
             
         URLSession.shared.dataTask(with: request) { data, response, error in
+//            Error handling
             if let error = error {
                 print("Upload error:", error.localizedDescription)
                 completion(false, nil)
@@ -103,7 +102,6 @@ class NetworkManager {
                 return
             }
                 
-            // Print response for debugging
             if let responseString = String(data: data, encoding: .utf8) {
                 print("Response:", responseString)
             }

@@ -24,6 +24,7 @@ class AddProductViewModel: ObservableObject {
     @ObservedObject private var networkMonitor = NetworkMonitor()
     
     private func validateInputs() -> Bool {
+//        Check if request is valid or not
         guard !productName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             alertMessage = "Please enter a product name"
             showAlert = true
@@ -52,6 +53,7 @@ class AddProductViewModel: ObservableObject {
     }
     
     func addProduct(completion: @escaping () -> Void) {
+//        Send request to NetworkManager from AddProductView
         guard validateInputs() else { return }
         
         isAddingProduct = true

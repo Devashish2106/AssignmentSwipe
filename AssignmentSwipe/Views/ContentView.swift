@@ -13,6 +13,7 @@ struct ContentView: View {
                 if isFirstScreen {
                     FirstScreenView(isFirstScreen: $isFirstScreen)
                         .onAppear {
+//                            Stay on first screen for 2 seconds to give time to load products
                             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                                 withAnimation {
                                     isFirstScreen = false
@@ -82,7 +83,8 @@ struct ContentView: View {
                     .navigationTitle("Product List")
                     .sheet(isPresented: $showAddProductScreen) {
                         AddProductView(onProductAdded: {
-                            viewModel.fetchProducts() // Refresh the list when a product is added
+                            viewModel.fetchProducts()
+//                            Refresh UI after adding product
                         })
                     }
                 }
@@ -98,8 +100,8 @@ struct FirstScreenView: View {
         VStack {
             Spacer()
 
-            // Demo Image
             Image("demo")
+//            Image I used as Demo for the whole app whenever no image was provided and for first screen
                 .resizable()
                 .scaledToFit()
                 .frame(width: 150, height: 150)

@@ -8,10 +8,8 @@
 import SwiftUI
 import PhotosUI
 
-import SwiftUI
-import PhotosUI
-
 struct AddProductView: View {
+//    AddProduct form view
     @StateObject private var viewModel = AddProductViewModel()
     @Environment(\.dismiss) var dismiss
     @State private var isImagePickerPresented = false
@@ -98,7 +96,6 @@ struct AddProductView: View {
     }
 }
 
-// Preview provider for SwiftUI canvas
 struct AddProductView_Previews: PreviewProvider {
     static var previews: some View {
         AddProductView(onProductAdded: {})

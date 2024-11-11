@@ -1,6 +1,6 @@
 import Foundation
 
-struct Product: Identifiable, Codable, Equatable { // Add Equatable conformance
+struct Product: Identifiable, Codable, Equatable {
     let id = UUID()
     let image: String?
     let productName: String

@@ -19,7 +19,6 @@ class ProductListViewModel: NSObject, ObservableObject {
     @ObservedObject private var networkMonitor = NetworkMonitor()
     
     override init() {
-        // Initialize FetchedResultsController with animation-friendly configuration
         let fetchRequest: NSFetchRequest<ProductEntity> = ProductEntity.fetchRequest()
         fetchRequest.sortDescriptors = [
             NSSortDescriptor(keyPath: \ProductEntity.isFavorite, ascending: false),
@@ -55,7 +54,6 @@ class ProductListViewModel: NSObject, ObservableObject {
     private func updateProductsFromFetchedResults() {
         guard let fetchedObjects = fetchedResultsController.fetchedObjects else { return }
         
-        // Update products with animation
         withAnimation(.easeInOut(duration: 0.3)) {
             self.products = fetchedObjects.map { entity in
                 Product(
@@ -127,18 +125,17 @@ class ProductListViewModel: NSObject, ObservableObject {
             
             do {
                 if let entity = try self.viewContext.fetch(fetchRequest).first {
-                    // Wrap the changes in a transaction for better animation handling
+                    
                     withAnimation(.easeInOut(duration: 0.3)) {
                         entity.isFavorite.toggle()
                         
-                        // Ensure proper ordering by updating the timestamp
                         if entity.isFavorite {
                             entity.createdAt = Date()
                         }
                         
                         try? self.viewContext.save()
                         
-                        // Force refresh the UI with animation
+//                        Refresh UI
                         DispatchQueue.main.async {
                             self.updateProductsFromFetchedResults()
                         }
@@ -158,7 +155,6 @@ class ProductListViewModel: NSObject, ObservableObject {
     }
 }
 
-// MARK: - NSFetchedResultsControllerDelegate
 extension ProductListViewModel: NSFetchedResultsControllerDelegate {
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         updateProductsFromFetchedResults()
