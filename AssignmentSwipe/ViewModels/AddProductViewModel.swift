@@ -7,6 +7,9 @@
 
 import SwiftUI
 
+import SwiftUI
+import CoreData
+
 class AddProductViewModel: ObservableObject {
     @Published var productName: String = ""
     @Published var productType: String = ""
@@ -17,29 +20,28 @@ class AddProductViewModel: ObservableObject {
     @Published var alertMessage = ""
     @Published var isAddingProduct = false
     
+    private let viewContext = PersistenceController.shared.container.viewContext
+    @ObservedObject private var networkMonitor = NetworkMonitor()
+    
     private func validateInputs() -> Bool {
-        // Check if product name is empty
         guard !productName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             alertMessage = "Please enter a product name"
             showAlert = true
             return false
         }
         
-        // Check if product type is empty
         guard !productType.isEmpty else {
             alertMessage = "Please select a product type"
             showAlert = true
             return false
         }
         
-        // Validate price
         guard let priceValue = Double(price), priceValue > 0 else {
             alertMessage = "Please enter a valid price"
             showAlert = true
             return false
         }
         
-        // Validate tax
         guard let taxValue = Double(tax), taxValue >= 0 else {
             alertMessage = "Please enter a valid tax rate"
             showAlert = true
@@ -57,25 +59,68 @@ class AddProductViewModel: ObservableObject {
         let priceValue = Double(price) ?? 0
         let taxValue = Double(tax) ?? 0
         
-        let newProduct = Product(
-            image: nil,
-            productName: productName.trimmingCharacters(in: .whitespacesAndNewlines),
-            productType: productType,
-            price: priceValue,
-            tax: taxValue
+        // Create CoreData entity
+        let newProductEntity = ProductEntity(context: viewContext)
+        newProductEntity.id = UUID()
+        newProductEntity.productName = productName.trimmingCharacters(in: .whitespacesAndNewlines)
+        newProductEntity.productType = productType
+        newProductEntity.price = priceValue
+        newProductEntity.tax = taxValue
+        newProductEntity.createdAt = Date()
+        newProductEntity.isFavorite = false
+        newProductEntity.needsUpload = true
+        
+        if let image = selectedImage {
+            newProductEntity.imageData = image.jpegData(compressionQuality: 0.8)
+        }
+        
+        do {
+            try viewContext.save()
+            
+            if networkMonitor.isConnected {
+                uploadProduct(newProductEntity) { [weak self] in
+                    self?.isAddingProduct = false
+                    completion()
+                }
+            } else {
+                isAddingProduct = false
+                alertMessage = "Product saved locally. Will sync when online."
+                showAlert = true
+                completion()
+            }
+        } catch {
+            isAddingProduct = false
+            alertMessage = "Failed to save product locally"
+            showAlert = true
+        }
+    }
+    
+    private func uploadProduct(_ productEntity: ProductEntity, completion: @escaping () -> Void) {
+        let product = Product(
+            image: productEntity.imageUrl,
+            productName: productEntity.productName ?? "",
+            productType: productEntity.productType ?? "",
+            price: productEntity.price,
+            tax: productEntity.tax
         )
         
-        // Pass the selected image to NetworkManager
-        NetworkManager.shared.addProduct(product: newProduct, image: selectedImage) { [weak self] success, imageUrl in
+        var imageToUpload: UIImage?
+        if let imageData = productEntity.imageData {
+            imageToUpload = UIImage(data: imageData)
+        }
+        
+        NetworkManager.shared.addProduct(product: product, image: imageToUpload) { success, imageUrl in
             DispatchQueue.main.async {
-                self?.isAddingProduct = false
                 if success {
-                    self?.alertMessage = "Product added successfully!"
-                    completion()
+                    productEntity.needsUpload = false
+                    productEntity.imageUrl = imageUrl
+                    try? self.viewContext.save()
+                    self.alertMessage = "Product added successfully!"
                 } else {
-                    self?.alertMessage = "Failed to add product. Please try again."
+                    self.alertMessage = "Product saved locally. Will sync when online."
                 }
-                self?.showAlert = true
+                self.showAlert = true
+                completion()
             }
         }
     }

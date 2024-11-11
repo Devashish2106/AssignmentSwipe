@@ -1,7 +1,9 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(\.managedObjectContext) private var viewContext
     @StateObject var viewModel = ProductListViewModel()
+    @EnvironmentObject var networkMonitor: NetworkMonitor
     @State private var showAddProductScreen = false
     @State private var isFirstScreen = true
 
@@ -51,18 +53,21 @@ struct ContentView: View {
                                     Spacer()
 
                                     Button(action: {
-                                        withAnimation(.easeInOut(duration: 0.3)) {
-                                            viewModel.toggleFavorite(for: product)
-                                        }
+                                        viewModel.toggleFavorite(for: product)
                                     }) {
                                         Image(systemName: product.isFavorite ? "heart.fill" : "heart")
                                             .foregroundColor(product.isFavorite ? .red : .gray)
+                                            .animation(.easeInOut(duration: 0.3), value: product.isFavorite)
                                     }
                                     .buttonStyle(BorderlessButtonStyle())
                                 }
+                                .transition(.opacity.combined(with: .move(edge: .leading)))
+                                .id(product.id)
                             }
-                            .refreshable {  // Add pull-to-refresh functionality
-                                await viewModel.refreshProducts()
+                            .animation(.easeInOut(duration: 0.3), value: viewModel.products)
+                            .listStyle(PlainListStyle())
+                            .refreshable {
+                                viewModel.fetchProducts()
                             }
                         }
 
@@ -86,7 +91,6 @@ struct ContentView: View {
     }
 }
 
-
 struct FirstScreenView: View {
     @Binding var isFirstScreen: Bool
 
@@ -95,11 +99,11 @@ struct FirstScreenView: View {
             Spacer()
 
             // Demo Image
-            Image("demo")  // Replace with the actual name of your demo image in the assets
+            Image("demo")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 150, height: 150)
-                .clipShape(Circle())  // Optional: To make it circular
+                .clipShape(Circle())
 
             Spacer()
 
@@ -113,7 +117,7 @@ struct FirstScreenView: View {
         }
         .padding()
         .background(Color.white)
-        .edgesIgnoringSafeArea(.all)  // Optional: To ignore the safe area and fill the screen
+        .edgesIgnoringSafeArea(.all)
     }
 }
 
