@@ -6,17 +6,18 @@ struct ContentView: View {
     @EnvironmentObject var networkMonitor: NetworkMonitor
     @State private var showAddProductScreen = false
     @State private var isFirstScreen = true
-
+    
     var body: some View {
         NavigationView {
             VStack {
-                if isFirstScreen {
+                if isFirstScreen && !viewModel.hasInitiallyLoaded {
                     FirstScreenView(isFirstScreen: $isFirstScreen)
                         .onAppear {
-//                            Stay on first screen for 2 seconds to give time to load products
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                                 withAnimation {
-                                    isFirstScreen = false
+                                    if viewModel.hasInitiallyLoaded {
+                                        isFirstScreen = false
+                                    }
                                 }
                             }
                         }
@@ -27,7 +28,7 @@ struct ContentView: View {
                             .background(Color(.systemGray6))
                             .cornerRadius(8)
                             .padding(.horizontal)
-
+                        
                         if viewModel.isLoading {
                             ProgressView("Loading products...")
                                 .progressViewStyle(CircularProgressViewStyle())
@@ -43,16 +44,16 @@ struct ContentView: View {
                                     }
                                     .frame(width: 50, height: 50)
                                     .cornerRadius(5)
-
+                                    
                                     VStack(alignment: .leading) {
                                         Text(product.productName).font(.headline)
                                         Text(product.productType).font(.subheadline)
                                         Text("Price: ₹\(String(format: "%.2f", product.price))").font(.footnote)
                                         Text("Tax: ₹\(String(format: "%.2f", product.tax))").font(.footnote)
                                     }
-
+                                    
                                     Spacer()
-
+                                    
                                     Button(action: {
                                         viewModel.toggleFavorite(for: product)
                                     }) {
@@ -71,7 +72,7 @@ struct ContentView: View {
                                 viewModel.fetchProducts()
                             }
                         }
-
+                        
                         Button(action: { showAddProductScreen.toggle() }) {
                             Text("Add Product")
                                 .padding()
@@ -84,7 +85,6 @@ struct ContentView: View {
                     .sheet(isPresented: $showAddProductScreen) {
                         AddProductView(onProductAdded: {
                             viewModel.fetchProducts()
-//                            Refresh UI after adding product
                         })
                     }
                 }

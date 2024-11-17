@@ -13,6 +13,7 @@ class ProductListViewModel: NSObject, ObservableObject {
     @Published var products: [Product] = []
     @Published var searchText: String = ""
     @Published var isLoading: Bool = false
+    @Published var hasInitiallyLoaded: Bool = false
     
     private let viewContext = PersistenceController.shared.container.viewContext
     private var fetchedResultsController: NSFetchedResultsController<ProductEntity>
@@ -37,9 +38,8 @@ class ProductListViewModel: NSObject, ObservableObject {
         fetchedResultsController.delegate = self
         loadLocalProducts()
         
-        if networkMonitor.isConnected {
-            fetchProducts()
-        }
+        // Always fetch products on init, regardless of network status
+        fetchProducts()
     }
     
     private func loadLocalProducts() {
@@ -54,16 +54,18 @@ class ProductListViewModel: NSObject, ObservableObject {
     private func updateProductsFromFetchedResults() {
         guard let fetchedObjects = fetchedResultsController.fetchedObjects else { return }
         
-        withAnimation(.easeInOut(duration: 0.3)) {
-            self.products = fetchedObjects.map { entity in
-                Product(
-                    image: entity.imageUrl,
-                    productName: entity.productName ?? "",
-                    productType: entity.productType ?? "",
-                    price: entity.price,
-                    tax: entity.tax,
-                    isFavorite: entity.isFavorite
-                )
+        DispatchQueue.main.async {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                self.products = fetchedObjects.map { entity in
+                    Product(
+                        image: entity.imageUrl,
+                        productName: entity.productName ?? "",
+                        productType: entity.productType ?? "",
+                        price: entity.price,
+                        tax: entity.tax,
+                        isFavorite: entity.isFavorite
+                    )
+                }
             }
         }
     }
@@ -76,28 +78,32 @@ class ProductListViewModel: NSObject, ObservableObject {
                     self?.updateLocalProducts(with: products)
                 }
                 self?.isLoading = false
+                self?.hasInitiallyLoaded = true
             }
         }
     }
     
-    @MainActor
-    func refreshProducts() async {
-        fetchProducts()
-    }
-    
     private func updateLocalProducts(with products: [Product]) {
         viewContext.perform {
-            // Only update products that aren't pending upload
+            // Create a map of existing products with their favorite status
             let fetchRequest: NSFetchRequest<ProductEntity> = ProductEntity.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "needsUpload == NO")
+            var existingProductsMap: [String: Bool] = [:]
             
             do {
                 let existingProducts = try self.viewContext.fetch(fetchRequest)
                 for product in existingProducts {
-                    self.viewContext.delete(product)
+                    if let name = product.productName, let type = product.productType {
+                        let key = "\(name)_\(type)"
+                        existingProductsMap[key] = product.isFavorite
+                    }
+                    
+                    if !product.needsUpload {
+                        self.viewContext.delete(product)
+                    }
                 }
                 
                 for product in products {
+                    let key = "\(product.productName)_\(product.productType)"
                     let entity = ProductEntity(context: self.viewContext)
                     entity.id = UUID()
                     entity.productName = product.productName
@@ -105,7 +111,7 @@ class ProductListViewModel: NSObject, ObservableObject {
                     entity.price = product.price
                     entity.tax = product.tax
                     entity.imageUrl = product.image
-                    entity.isFavorite = product.isFavorite
+                    entity.isFavorite = existingProductsMap[key] ?? false
                     entity.needsUpload = false
                     entity.createdAt = Date()
                 }
